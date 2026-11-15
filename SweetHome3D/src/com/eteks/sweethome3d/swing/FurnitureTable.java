@@ -724,6 +724,26 @@ public class FurnitureTable extends JTable implements View, Printable {
   }
 
   /**
+   * Returns the Level column that should be added to printed columns, or <code>null</code>
+   * if the home has no levels or if the Level column is already displayed.
+   */
+  private TableColumn getPrintedLevelColumn(TableColumnModel columnModel) {
+    if (columnModel instanceof FurnitureTableColumnModel) {
+      Home home = (Home)((FurnitureTreeTableModel)getModel()).getRoot();
+      if (home.getLevels().isEmpty()) {
+        return null;
+      }
+      for (int columnIndex = 0, n = columnModel.getColumnCount(); columnIndex < n; columnIndex++) {
+        if (columnModel.getColumn(columnIndex).getIdentifier() == HomePieceOfFurniture.SortableProperty.LEVEL) {
+          return null;
+        }
+      }
+      return ((FurnitureTableColumnModel)columnModel).availableColumns.get(HomePieceOfFurniture.SortableProperty.LEVEL);
+    }
+    return null;
+  }
+
+  /**
    * Prints this component to make it fill <code>pageFormat</code> imageable size.
    */
   public int print(Graphics g, PageFormat pageFormat, int pageIndex) throws PrinterException {
@@ -750,8 +770,17 @@ public class FurnitureTable extends JTable implements View, Printable {
           return headerRendererLabel;
         }
       };
+    List<TableColumn> printedColumns = new ArrayList<TableColumn>();
     for (int columnIndex = 0, n = columnModel.getColumnCount(); columnIndex < n; columnIndex++) {
-      final TableColumn tableColumn = columnModel.getColumn(columnIndex);
+      printedColumns.add(columnModel.getColumn(columnIndex));
+    }
+    // Print a Level column for homes with levels so that rows of different levels
+    // can be distinguished, without changing the columns displayed on screen
+    TableColumn levelColumn = getPrintedLevelColumn(columnModel);
+    if (levelColumn != null) {
+      printedColumns.add(levelColumn);
+    }
+    for (final TableColumn tableColumn : printedColumns) {
       // Create a printable column from existing table column
       TableColumn printableColumn = new TableColumn();
       printableColumn.setIdentifier(tableColumn.getIdentifier());
